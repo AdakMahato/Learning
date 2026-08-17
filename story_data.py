@@ -80,7 +80,7 @@ STORIES = [
     {
         "id": 7,
         "title": "The Colony That Forgot Its Laws",
-        "icon": "🤖",
+        "icon": "⚖️",
         "genre": "Autonomous robot society",
         "difficulty": "Expert",
         "hook": "Twelve robot sectors have different versions of the same rulebook.",

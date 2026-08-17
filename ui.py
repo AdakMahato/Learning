@@ -2,6 +2,8 @@ import streamlit as st
 
 from challenges import render_story_challenge
 from story_data import STORIES
+from persistence import load_progress, save_progress
+from level_content import LEVEL_CONTENT
 
 PAGE_PATHS = {1: "pages/01_vanishing_hour.py", 2: "pages/02_convoy_zero.py", 3: "pages/03_silence_between_signals.py", 4: "pages/04_remembered_too_much.py", 5: "pages/05_last_broadcast.py", 6: "pages/06_depth_ledger.py", 7: "pages/07_colony_laws.py", 8: "pages/08_machine_lied.py", 9: "pages/09_forgotten_archive.py", 10: "pages/10_impossible_blueprint.py", 11: "pages/11_impossible_contract.py"}
 ACCENTS = {1: "#7C3AED", 2: "#2563EB", 3: "#0891B2", 4: "#9333EA", 5: "#DC2626", 6: "#B45309", 7: "#059669", 8: "#4F46E5", 9: "#64748B", 10: "#0F766E", 11: "#B45309"}
@@ -72,6 +74,7 @@ def configure_page(title="DBMS Story Lab"):
 
 
 def ensure_state():
+    load_progress()  # Restore saved progress on first call; no-op on subsequent calls
     st.session_state.setdefault("completed", set())
     st.session_state.setdefault("xp", 0)
     st.session_state.setdefault("missions", {})
@@ -102,8 +105,6 @@ def sidebar(active="home"):
         if active == "home": st.markdown('<div class="nav-active">⌂ &nbsp; Home</div>', unsafe_allow_html=True)
         else: st.page_link("app.py", label="⌂  Home")
         st.markdown('<div class="nav-label">LEARN</div>', unsafe_allow_html=True)
-        if active == "storylines": st.markdown('<div class="nav-active">▣ &nbsp; Storylines</div>', unsafe_allow_html=True)
-        else: st.page_link("app.py", label="▣  Storylines")
         if active == "map": st.markdown('<div class="nav-active">◈ &nbsp; Learning Map</div>', unsafe_allow_html=True)
         else: st.page_link("pages/learning_map.py", label="◈  Learning Map")
         st.markdown('<div class="nav-label">PROGRESS</div>', unsafe_allow_html=True)
@@ -116,7 +117,13 @@ def sidebar(active="home"):
         st.progress(total / 11)
         st.markdown(f'<div class="sidebar-xp">XP<br><strong style="color:#172033;font-size:1rem">{st.session_state.xp:,}</strong></div>', unsafe_allow_html=True)
         if st.button("Reset progress", use_container_width=True):
-            st.session_state.completed, st.session_state.xp, st.session_state.missions = set(), 0, {}
+            st.session_state.completed = set()
+            st.session_state.xp = 0
+            st.session_state.missions = {}
+            for key in list(st.session_state.keys()):
+                if key.startswith(("completed_levels_", "active_level_", "mcq_", "proceed_")):
+                    del st.session_state[key]
+            save_progress()
             st.rerun()
 
 
@@ -209,24 +216,102 @@ def render_story_page(story_id):
     with main:
         st.markdown('<div class="workspace-main">', unsafe_allow_html=True)
         level_name, level_skill = LEVELS[active - 1]
-        st.markdown(f'<div class="workspace-eyebrow">LEVEL {active:02d} · {level_name.upper()} &nbsp;&nbsp; +{LEVEL_XP[active-1]} XP</div><h1>{story["title"]}: {level_name}</h1><p class="muted">{story["opening"]}</p><h3>Your objective</h3><div class="objective">{story["hook"]} Use the evidence in the context panel to determine what the records are really telling you.</div>', unsafe_allow_html=True)
-        with st.expander("💡 Show hint"):
-            st.markdown('<div class="hint-box">Start with the evidence that repeats. You do not need to inspect every record manually. Look for a pattern that connects the facts.</div>', unsafe_allow_html=True)
-        with st.expander("Need another clue?"):
-            st.write("The database is most useful when it can reason about related records as a set, rather than one record at a time.")
-        st.markdown('<h3>Interactive lab</h3>', unsafe_allow_html=True)
+        level_list = LEVEL_CONTENT.get(story_id) or [{}] * 8
+        level_data = level_list[active - 1] if active <= len(level_list) else {}
+        challenge_type = level_data.get("type", "interactive")
+
+        st.markdown(
+            f'<div class="workspace-eyebrow">LEVEL {active:02d} · {level_name.upper()} &nbsp;&nbsp; +{LEVEL_XP[active - 1]} XP</div>'
+            f'<h1>{story["title"]}: {level_name}</h1>',
+            unsafe_allow_html=True,
+        )
+
+        narrative = level_data.get("narrative", story["opening"])
+        st.markdown(f'<div class="objective">{narrative}</div>', unsafe_allow_html=True)
+
         def complete_current(sid):
             levels = st.session_state.setdefault(f"completed_levels_{sid}", set())
             current = st.session_state.get(f"active_level_{sid}", 1)
             if current not in levels:
-                levels.add(current); st.session_state.xp += LEVEL_XP[current-1]
-                if current == 8: st.session_state.completed.add(sid)
+                levels.add(current)
+                st.session_state.xp += LEVEL_XP[current - 1]
+                if current == 8:
+                    st.session_state.completed.add(sid)
             st.session_state[f"active_level_{sid}"] = min(current + 1, 8)
-        render_story_challenge(story, complete_current, show_progress=False)
+            save_progress()
+
+        # ── Read level ─────────────────────────────────────────────────────────
+        if challenge_type == "read":
+            task_text = level_data.get("task", "")
+            st.markdown(
+                f'<p style="margin-top:1rem;color:#667085;font-size:.94rem">{task_text}</p>',
+                unsafe_allow_html=True,
+            )
+            if active not in completed_levels:
+                if st.button("✓ Understood — proceed", key=f"proceed_{story_id}_{active}"):
+                    complete_current(story_id)
+                    st.rerun()
+
+        # ── MCQ level ──────────────────────────────────────────────────────────
+        elif challenge_type == "mcq":
+            task_text = level_data.get("task", "")
+            st.markdown(
+                f'<h3>Your question</h3>'
+                f'<p style="margin:.5rem 0 1rem;color:#344054;font-size:.95rem">{task_text}</p>',
+                unsafe_allow_html=True,
+            )
+            if active not in completed_levels:
+                with st.form(key=f"mcq_form_{story_id}_{active}"):
+                    st.radio(
+                        "",
+                        level_data.get("options", []),
+                        label_visibility="collapsed",
+                        key=f"mcq_radio_{story_id}_{active}",
+                    )
+                    submitted = st.form_submit_button("Submit answer")
+                if submitted:
+                    chosen = st.session_state.get(f"mcq_radio_{story_id}_{active}")
+                    if chosen == level_data.get("answer"):
+                        complete_current(story_id)
+                        st.rerun()
+                    else:
+                        st.error(level_data.get("feedback_wrong", "Not quite. Try again."))
+
+        # ── Interactive level (Final Boss) ──────────────────────────────────────
+        else:
+            task_text = level_data.get("task", "")
+            st.markdown(
+                f'<p style="margin-top:.5rem;color:#667085;font-size:.94rem">{task_text}</p>',
+                unsafe_allow_html=True,
+            )
+            with st.expander("💡 Show hint"):
+                st.markdown(
+                    '<div class="hint-box">Start with the evidence that repeats. '
+                    'Look for a pattern that connects the facts.</div>',
+                    unsafe_allow_html=True,
+                )
+            with st.expander("Need another clue?"):
+                st.write("The database is most useful when reasoning about related records as a set, not one at a time.")
+            st.markdown('<h3>Interactive lab</h3>', unsafe_allow_html=True)
+            render_story_challenge(story, complete_current, show_progress=False)
+
+        # ── Success reveal ─────────────────────────────────────────────────────
         if active in completed_levels:
-            st.markdown(f'<div class="success-reveal"><b>✓ Investigation solved</b><br>What you just discovered: <b>{story["primary"]}</b>. The evidence became useful once the records were structured and evaluated together.</div>', unsafe_allow_html=True)
+            if challenge_type == "mcq":
+                reveal_text = level_data.get("feedback_correct", "Level complete.")
+            elif challenge_type == "read":
+                reveal_text = "Evidence logged. The investigation advances."
+            else:
+                reveal_text = f'What you discovered: <b>{story["primary"]}</b>.'
+            st.markdown(
+                f'<div class="success-reveal"><b>✓ Level {active:02d} — {level_name} complete</b>'
+                f'<br>{reveal_text}</div>',
+                unsafe_allow_html=True,
+            )
             if active < 8 and st.button(f"Continue to Level {active + 1:02d} →", key=f"continue_{story_id}_{active}"):
-                st.session_state[f"active_level_{story_id}"] = active + 1; st.rerun()
+                st.session_state[f"active_level_{story_id}"] = active + 1
+                st.rerun()
+
         st.markdown('</div>', unsafe_allow_html=True)
     if context:
         with context:

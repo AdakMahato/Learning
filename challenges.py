@@ -88,19 +88,29 @@ def normalization_challenge():
 
 def fill_gap_challenge():
     st.markdown("### 🧩 Fill the missing pieces")
-    st.write("Complete the SQL statement that finds zones with more than one active route.")
+    st.write(
+        "During the wildfire, three agencies assigned conflicting routes to the same zones. "
+        "Complete the SQL that identifies which zones have more than one evacuation route assigned:"
+    )
+    st.code(
+        "SELECT zone_id, ___ zone_id\nHAVING ___(DISTINCT route_id) > 1",
+        language="sql",
+    )
     c1, c2, c3 = st.columns(3)
     with c1:
-        group = st.selectbox("Blank 1", ["WHERE", "GROUP BY", "ORDER BY"], key="fg1")
+        group = st.selectbox("Blank 1 – grouping clause", ["WHERE", "GROUP BY", "ORDER BY"], key="fg1")
     with c2:
-        count = st.selectbox("Blank 2", ["COUNT(DISTINCT active_route_id)", "SUM(active_route_id)", "MAX(zone_id)"], key="fg2")
+        count = st.selectbox("Blank 2 – aggregate", ["COUNT(DISTINCT route_id)", "SUM(route_id)", "MAX(zone_id)"], key="fg2")
     with c3:
-        having = st.selectbox("Blank 3", ["HAVING", "WHERE", "LIMIT"], key="fg3")
+        having = st.selectbox("Blank 3 – post-aggregate filter", ["HAVING", "WHERE", "LIMIT"], key="fg3")
     if st.button("Check gaps", key="fgcheck"):
-        if group == "GROUP BY" and count == "COUNT(DISTINCT active_route_id)" and having == "HAVING":
-            st.success("Perfect. GROUP BY → COUNT(DISTINCT ...) → HAVING captures the contradiction.")
+        if group == "GROUP BY" and count == "COUNT(DISTINCT route_id)" and having == "HAVING":
+            st.success(
+                "Correct. GROUP BY collapses by zone, COUNT(DISTINCT route_id) detects conflicts, "
+                "HAVING filters to only contested zones."
+            )
             return True
-        st.error("One or more blanks are wrong.")
+        st.error("One or more blanks are wrong. Which clause groups rows? Which filters after aggregation?")
     return False
 
 def index_visualizer():
