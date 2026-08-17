@@ -792,153 +792,47 @@ LEVEL_CONTENT = {
     # ──────────────────────────────────────────────────────────────────────────
     # 6 — The Depth Ledger   (Advanced SQL)
     # ──────────────────────────────────────────────────────────────────────────
-    6: [
-        {
-            "type": "read",
-            "narrative": (
-                "A cache of 200,000 digitised clay tablets reveals merchant trade data spanning "
-                "three centuries of the Veridian Empire. Hidden among routine transactions is a "
-                "pattern of payments that defies the historical record — a conspiracy that "
-                "redirected empire revenues to four private accounts. Your SQL terminal is "
-                "connected to the digitised ledger."
-            ),
-            "task": "Read the case file. Proceed to start querying the ledger.",
-        },
-        {
-            "type": "mcq",
-            "narrative": (
-                "You need the total trade amount per merchant. The transactions table has one row "
-                "per transaction. You must collapse many rows into one summary row per merchant."
-            ),
-            "task": "Which SQL clause collapses multiple rows into groups for aggregation?",
-            "options": ["WHERE", "ORDER BY", "GROUP BY", "HAVING"],
-            "answer": "GROUP BY",
-            "feedback_correct": (
-                "Correct. GROUP BY partitions rows into groups sharing the same value(s), "
-                "then applies aggregate functions (SUM, COUNT, AVG) to each group."
-            ),
-            "feedback_wrong": (
-                "Not quite. GROUP BY collapses rows into summary groups. HAVING then filters "
-                "those groups. WHERE filters individual rows before grouping."
-            ),
-        },
-        {
-            "type": "mcq",
-            "narrative": (
-                "You need to rank each merchant's annual revenue relative to all other merchants "
-                "in the same year — without collapsing the individual transaction rows."
-            ),
-            "task": "What type of SQL function computes a result across related rows without collapsing them into groups?",
-            "options": [
-                "Aggregate function",
-                "Scalar function",
-                "Window function",
-                "Stored function",
+    6: {
+        "format": "episodic",
+        "episodes": [
+            [
+                {"type": "story", "text": "A cache of 200,000 digitised clay tablets reveals merchant trade data spanning three centuries of the Veridian Empire."},
+                {"type": "problem", "text": "The archive is chaotic. Tablets are piled everywhere with no structure."},
+                {"type": "concept", "title": "Tables, Rows, & Columns", "explanation": "A database organizes data into Tables (entities). Each Row is a single record, and each Column is an attribute."},
+                {"type": "micro_challenge", "challenge_type": "mcq", "task": "If a tablet lists 'Aster, Copper, 500 units', what does this represent?", "options": ["A table", "A row", "A column"], "answer": "A row"}
             ],
-            "answer": "Window function",
-            "feedback_correct": (
-                "Correct. Window functions (OVER clause) compute values like RANK(), SUM(), or "
-                "LAG() across a partition of rows while preserving all individual rows."
-            ),
-            "feedback_wrong": (
-                "Not quite. Window functions use OVER(). They compute aggregates across a "
-                "window of rows without the collapsing behavior of GROUP BY."
-            ),
-        },
-        {
-            "type": "mcq",
-            "narrative": (
-                "The conspiracy query has three intermediate steps, each needing the previous "
-                "step's result. Writing it as nested subqueries makes it deeply unreadable."
-            ),
-            "task": "What SQL construct lets you define named intermediate result sets at the top of a query?",
-            "options": [
-                "Subquery",
-                "Derived table",
-                "Common Table Expression (CTE)",
-                "Temporary table",
+            [
+                {"type": "story", "text": "We've organized the tablets into a pile for 'Merchants' and a pile for 'Transactions'."},
+                {"type": "problem", "text": "Wait... two merchants are both named 'Aster'. How do we know which Aster made which transaction?"},
+                {"type": "concept", "title": "Primary Keys", "explanation": "A Primary Key (PK) is a column that uniquely identifies every row in a table."},
+                {"type": "micro_challenge", "challenge_type": "mcq", "task": "Which of these is the best Primary Key for the Merchants table?", "options": ["Name", "City", "Merchant_ID (Unique Number)"], "answer": "Merchant_ID (Unique Number)"}
             ],
-            "answer": "Common Table Expression (CTE)",
-            "feedback_correct": (
-                "Correct. A CTE (introduced with the WITH keyword) defines named result sets "
-                "that can be referenced in the main query, greatly improving readability."
-            ),
-            "feedback_wrong": (
-                "Not quite. CTEs use WITH name AS (SELECT ...) SELECT ... FROM name. "
-                "They're evaluated once and can be referenced multiple times."
-            ),
-        },
-        {
-            "type": "mcq",
-            "narrative": (
-                "You need to combine an 'exports' result (12,400 rows) with an 'imports' result "
-                "(9,800 rows). Some merchants appear in both. You want every row from both, "
-                "including duplicates."
-            ),
-            "task": "Which set operation returns all rows from both queries, including duplicates?",
-            "options": ["UNION", "UNION ALL", "INTERSECT", "EXCEPT"],
-            "answer": "UNION ALL",
-            "feedback_correct": (
-                "Correct. UNION ALL returns all rows from both queries including duplicates. "
-                "UNION deduplicates the combined result."
-            ),
-            "feedback_wrong": (
-                "Not quite. UNION removes duplicates (requires an extra sort/hash step). "
-                "UNION ALL keeps all rows as-is — faster and correct when duplicates are meaningful."
-            ),
-        },
-        {
-            "type": "mcq",
-            "narrative": (
-                "After grouping by merchant, you only want merchants whose total trade exceeds "
-                "2,000 units. Using WHERE fails because aggregate functions can't appear in WHERE."
-            ),
-            "task": "Which SQL clause filters groups after aggregation has been applied?",
-            "options": ["WHERE", "HAVING", "FILTER", "GROUP FILTER"],
-            "answer": "HAVING",
-            "feedback_correct": (
-                "Correct. HAVING filters the groups produced by GROUP BY, and can reference "
-                "aggregate functions like SUM() and COUNT()."
-            ),
-            "feedback_wrong": (
-                "Not quite. WHERE filters individual rows before grouping; HAVING filters groups "
-                "after aggregation. You can't use aggregate functions in WHERE."
-            ),
-        },
-        {
-            "type": "mcq",
-            "narrative": (
-                "A correlated subquery retrieves the top merchant per year, then JOINs that result "
-                "back to the full transactions table. The same result can be achieved without a "
-                "subquery using a window function."
-            ),
-            "task": "Which approach is generally preferred when you need both individual row data AND a partition-level aggregate?",
-            "options": [
-                "A correlated subquery for each row",
-                "A self-JOIN on the aggregated result",
-                "A window function with OVER(PARTITION BY ...)",
-                "Multiple separate queries combined in application code",
+            [
+                {"type": "story", "text": "Now every merchant has a Merchant_ID (e.g. Aster is ID 1)."},
+                {"type": "problem", "text": "How do we record that Aster (ID 1) made a transaction without writing 'Aster' again?"},
+                {"type": "concept", "title": "Foreign Keys", "explanation": "A Foreign Key (FK) is a column in one table that references the Primary Key of another table, creating a relationship."},
+                {"type": "micro_challenge", "challenge_type": "mcq", "task": "In the Transactions table, which column acts as the Foreign Key?", "options": ["Transaction_ID", "Merchant_ID", "Amount"], "answer": "Merchant_ID"}
             ],
-            "answer": "A window function with OVER(PARTITION BY ...)",
-            "feedback_correct": (
-                "Correct. Window functions elegantly compute partition-level aggregates alongside "
-                "row-level data in a single query pass."
-            ),
-            "feedback_wrong": (
-                "Not quite. Window functions are typically more efficient and more readable than "
-                "correlated subqueries or self-JOINs for per-group aggregates alongside individual rows."
-            ),
-        },
-        {
-            "type": "interactive",
-            "narrative": (
-                "The conspiracy ledger is open. You have access to merchants, goods, and "
-                "transactions tables spanning three centuries. Identify the merchants whose "
-                "cumulative trade amounts are statistically anomalous."
-            ),
-            "task": "Use the SQL terminal to query the merchant ledger and submit the highest-revenue merchants.",
-        },
-    ],
+            [
+                {"type": "story", "text": "Aster moves from North City to East City. We have 10,000 transactions for Aster."},
+                {"type": "problem", "text": "If we stored 'City' in every transaction row, we'd have to update 10,000 rows. If we miss one, the data contradicts itself!"},
+                {"type": "concept", "title": "Update Anomaly", "explanation": "When duplicate data isn't updated everywhere, the database becomes inconsistent."},
+                {"type": "micro_challenge", "challenge_type": "mcq", "task": "How do we prevent this anomaly?", "options": ["Store City in the Transactions table", "Store City only in the Merchants table", "Never let Aster move"], "answer": "Store City only in the Merchants table"}
+            ],
+            [
+                {"type": "story", "text": "We need to design a clean schema before we query for the conspiracy."},
+                {"type": "problem", "text": "The raw data has multiple values in one cell: Goods = 'Copper, Grain'."},
+                {"type": "concept", "title": "Normalization (1NF)", "explanation": "First Normal Form requires that every column holds exactly one value (atomic values)."},
+                {"type": "micro_challenge", "challenge_type": "mcq", "task": "How do we fix the Goods column?", "options": ["Create separate rows for each good", "Leave it comma-separated"], "answer": "Create separate rows for each good"}
+            ],
+            [
+                {"type": "story", "text": "The data is clean, normalized, and linked. We suspect fraud among the merchants."},
+                {"type": "problem", "text": "We need to find the merchants with the highest trade totals."},
+                {"type": "concept", "title": "Advanced SQL: GROUP BY", "explanation": "We can use GROUP BY to collapse all transactions for each merchant and SUM() their amounts."},
+                {"type": "interactive", "task": "Use the SQL terminal to find the merchants with the highest cumulative trade amounts. Submit your result."}
+            ]
+        ]
+    },
 
     # ──────────────────────────────────────────────────────────────────────────
     # 7 — The Colony That Forgot Its Laws   (Consensus + Replication)

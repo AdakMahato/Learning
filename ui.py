@@ -192,8 +192,101 @@ def context_panel(story):
     st.text_area("Scratch notes", key=f"workspace_notes_{sid}", height=130, placeholder="Record a clue…")
 
 
+def render_episodic_page(story_id, story, data):
+    configure_page(f"{story['title']} · DBMS Story Lab")
+    workspace_css()
+    episodes = data.get("episodes", [])
+    completed_episodes = st.session_state.setdefault(f"completed_levels_{story_id}", set())
+    active = st.session_state.setdefault(f"active_level_{story_id}", min(len(completed_episodes) + 1, len(episodes)))
+    progress = len(completed_episodes)
+    hide_context = st.session_state.get(f"hide_context_{story_id}", False)
+    widths = [2.25, 6.1, 2.25] if not hide_context else [2.25, 8.35]
+    columns = st.columns(widths)
+    rail, main = columns[0], columns[1]
+    context = columns[2] if not hide_context else None
+    
+    with rail:
+        st.markdown(f'<div class="rail-title">{story["title"].upper()}</div><div class="rail-genre">{story["genre"]}</div><div class="rail-mission">{story["hook"]}</div><div class="rail-label">{len(episodes)} EPISODES</div>', unsafe_allow_html=True)
+        available = list(range(1, min(progress + 2, len(episodes) + 1)))
+        selected = st.radio("Episodes", available, index=max(0, min(active, len(available)) - 1), format_func=lambda n: f"{n:02d}  Episode {n}", label_visibility="collapsed", key=f"level_picker_{story_id}")
+        if selected != active:
+            st.session_state[f"active_level_{story_id}"] = selected; st.rerun()
+        for number in range(1, len(episodes) + 1):
+            if number in available: continue
+            st.markdown(f'<div class="level-static locked"><b>🔒 {number:02d} &nbsp; Episode {number}</b></div>', unsafe_allow_html=True)
+            
+    with main:
+        st.markdown('<div class="workspace-main">', unsafe_allow_html=True)
+        st.markdown(f'<div class="workspace-eyebrow">EPISODE {active:02d}</div><h1>{story["title"]}</h1>', unsafe_allow_html=True)
+        episode_blocks = episodes[active - 1] if active <= len(episodes) else []
+        
+        def complete_current():
+            levels = st.session_state.setdefault(f"completed_levels_{story_id}", set())
+            current = st.session_state.get(f"active_level_{story_id}", 1)
+            if current not in levels:
+                levels.add(current)
+                st.session_state.xp += 35
+                if current == len(episodes):
+                    st.session_state.completed.add(story_id)
+            st.session_state[f"active_level_{story_id}"] = min(current + 1, len(episodes))
+            save_progress()
+            st.rerun()
+
+        for i, block in enumerate(episode_blocks):
+            btype = block.get("type")
+            if btype == "story":
+                st.markdown(f'<div class="objective">{block["text"]}</div>', unsafe_allow_html=True)
+            elif btype == "problem":
+                st.markdown(f'<div style="background:#FEF2F2; border-left:3px solid #EF4444; padding:15px 17px; color:#991B1B; margin: 10px 0; border-radius:0 8px 8px 0;"><b>Problem:</b> {block["text"]}</div>', unsafe_allow_html=True)
+            elif btype == "concept":
+                st.markdown(f'<div style="background:#EFF6FF; border:1px solid #BFDBFE; padding:15px; border-radius:10px; margin: 15px 0;"><b>{block["title"]}</b><br><span style="color:#1E3A8A; font-size: 0.9rem;">{block["explanation"]}</span></div>', unsafe_allow_html=True)
+            elif btype == "micro_challenge":
+                st.markdown(f'<h3 style="margin-top: 20px;">Challenge</h3><p style="color:#344054;font-size:.95rem">{block["task"]}</p>', unsafe_allow_html=True)
+                if active not in completed_episodes:
+                    with st.form(key=f"mcq_form_{story_id}_{active}_{i}"):
+                        st.radio("", block["options"], label_visibility="collapsed", key=f"mcq_radio_{story_id}_{active}_{i}")
+                        submitted = st.form_submit_button("Submit answer")
+                    if submitted:
+                        if st.session_state.get(f"mcq_radio_{story_id}_{active}_{i}") == block["answer"]:
+                            complete_current()
+                        else:
+                            st.error("Not quite. Try again.")
+                    break
+                else:
+                    st.success(f"✓ You answered: {block['answer']}")
+            elif btype == "interactive":
+                st.markdown(f'<h3 style="margin-top: 20px;">Challenge</h3><p style="color:#344054;font-size:.95rem">{block["task"]}</p>', unsafe_allow_html=True)
+                if active not in completed_episodes:
+                    from challenges import render_story_challenge
+                    render_story_challenge(story, lambda sid: complete_current(), show_progress=False)
+                    break
+                else:
+                    st.success("✓ Interactive lab complete.")
+                    
+        if active in completed_episodes:
+            st.markdown(f'<div class="success-reveal" style="margin-top: 20px;"><b>✓ Episode {active:02d} complete</b></div>', unsafe_allow_html=True)
+            if active < len(episodes) and st.button(f"Continue to Episode {active + 1:02d} →", key=f"continue_{story_id}_{active}"):
+                st.session_state[f"active_level_{story_id}"] = active + 1
+                st.rerun()
+
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    if context:
+        with context:
+            if st.button("Hide panel  ›", key=f"hide_context_button_{story_id}"):
+                st.session_state[f"hide_context_{story_id}"] = True; st.rerun()
+            context_panel(story)
+    else:
+        if st.button("‹ Show context", key=f"show_context_button_{story_id}"):
+            st.session_state[f"hide_context_{story_id}"] = False; st.rerun()
+
+
 def render_story_page(story_id):
     story = next(s for s in STORIES if s["id"] == story_id)
+    level_list = LEVEL_CONTENT.get(story_id)
+    if isinstance(level_list, dict) and level_list.get("format") == "episodic":
+        return render_episodic_page(story_id, story, level_list)
+
     configure_page(f"{story['title']} · DBMS Story Lab")
     workspace_css()
     completed_levels = st.session_state.setdefault(f"completed_levels_{story_id}", set())
