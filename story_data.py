@@ -1,5 +1,18 @@
 STORIES = [
     {
+        "id": 0,
+        "title": "The Database Behind the World",
+        "icon": "🚀",
+        "genre": "Interactive Origin Story / Systems Mystery",
+        "difficulty": "Beginner → Intermediate",
+        "hook": "A city's information is scattered. You are asked to rebuild its core system.",
+        "opening": "Nexora controls hospitals, trains, and banks. Every department keeps its own records. You must build the database that connects them all.",
+        "reveal": "By solving the city's problems, you discover why databases, primary keys, relationships, SQL, and transactions exist.",
+        "primary": "DBMS Foundations",
+        "mode": "Guided concepts",
+        "topics": ["Tables", "SQL", "Keys", "Relationships", "Transactions", "Indexes"],
+    },
+    {
         "id": 1,
         "title": "The Vanishing Hour",
         "icon": "🕰️",
@@ -93,7 +106,7 @@ STORIES = [
     {
         "id": 8,
         "title": "The Machine That Lied",
-        "icon": "🤖",
+        "icon": "🛡️",
         "genre": "Cyber investigation / AI accountability",
         "difficulty": "Expert / Research-level",
         "hook": "An AI gave two departments contradictory advice from supposedly the same report.",

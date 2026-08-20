@@ -5,9 +5,9 @@ from story_data import STORIES
 from persistence import load_progress, save_progress
 from level_content import LEVEL_CONTENT
 
-PAGE_PATHS = {1: "pages/01_vanishing_hour.py", 2: "pages/02_convoy_zero.py", 3: "pages/03_silence_between_signals.py", 4: "pages/04_remembered_too_much.py", 5: "pages/05_last_broadcast.py", 6: "pages/06_depth_ledger.py", 7: "pages/07_colony_laws.py", 8: "pages/08_machine_lied.py", 9: "pages/09_forgotten_archive.py", 10: "pages/10_impossible_blueprint.py", 11: "pages/11_impossible_contract.py"}
-ACCENTS = {1: "#7C3AED", 2: "#2563EB", 3: "#0891B2", 4: "#9333EA", 5: "#DC2626", 6: "#B45309", 7: "#059669", 8: "#4F46E5", 9: "#64748B", 10: "#0F766E", 11: "#B45309"}
-CATEGORIES = {1: "SQL", 2: "Distributed Systems", 3: "Performance", 4: "Design", 5: "Transactions", 6: "SQL", 7: "Distributed Systems", 8: "Transactions", 9: "Foundation", 10: "Design", 11: "Design"}
+PAGE_PATHS = {0: "pages/00_foundation.py", 1: "pages/01_vanishing_hour.py", 2: "pages/02_convoy_zero.py", 3: "pages/03_silence_between_signals.py", 4: "pages/04_remembered_too_much.py", 5: "pages/05_last_broadcast.py", 6: "pages/06_depth_ledger.py", 7: "pages/07_colony_laws.py", 8: "pages/08_machine_lied.py", 9: "pages/09_forgotten_archive.py", 10: "pages/10_impossible_blueprint.py", 11: "pages/11_impossible_contract.py"}
+ACCENTS = {0: "#047857", 1: "#7C3AED", 2: "#2563EB", 3: "#0891B2", 4: "#9333EA", 5: "#DC2626", 6: "#B45309", 7: "#059669", 8: "#4F46E5", 9: "#64748B", 10: "#0F766E", 11: "#B45309"}
+CATEGORIES = {0: "Foundation", 1: "SQL", 2: "Distributed Systems", 3: "Performance", 4: "Design", 5: "Transactions", 6: "SQL", 7: "Distributed Systems", 8: "Transactions", 9: "Foundation", 10: "Design", 11: "Design"}
 
 
 def configure_page(title="DBMS Story Lab"):
@@ -80,12 +80,14 @@ def ensure_state():
     st.session_state.setdefault("missions", {})
 
 
-def mark_complete(story_id, amount=100):
-    # The existing interactive lab is the first assessed step in each case.
-    st.session_state[f"mission_{story_id}_1"] = True
-    if story_id not in st.session_state.completed:
-        st.session_state.completed.add(story_id)
+def mark_complete(story_id, amount=100, level=1, total_levels=1):
+    key = f"mission_{story_id}_{level}"
+    if not st.session_state.get(key):
+        st.session_state[key] = True
         st.session_state.xp += amount
+        if level == total_levels:
+            st.session_state.completed.add(story_id)
+        save_progress()
 
 
 def skill_radar():
@@ -107,6 +109,8 @@ def sidebar(active="home"):
         st.markdown('<div class="nav-label">LEARN</div>', unsafe_allow_html=True)
         if active == "map": st.markdown('<div class="nav-active">◈ &nbsp; Learning Map</div>', unsafe_allow_html=True)
         else: st.page_link("pages/learning_map.py", label="◈  Learning Map")
+        if active == "notebook": st.markdown('<div class="nav-active">📓 &nbsp; Field Notebook</div>', unsafe_allow_html=True)
+        else: st.page_link("pages/12_field_notebook.py", label="📓  Field Notebook")
         st.markdown('<div class="nav-label">PROGRESS</div>', unsafe_allow_html=True)
         if active == "progress": st.markdown('<div class="nav-active">◉ &nbsp; Progress</div>', unsafe_allow_html=True)
         else: st.page_link("pages/progress.py", label="◉  Progress")
@@ -232,33 +236,64 @@ def render_episodic_page(story_id, story, data):
             save_progress()
             st.rerun()
 
+        from field_notebook import advance_concept
         for i, block in enumerate(episode_blocks):
             btype = block.get("type")
+            concept_id = block.get("concept_id")
+
             if btype == "story":
-                st.markdown(f'<div class="objective">{block["text"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="objective"><h3>{block.get("title", "")}</h3><p>{block.get("content", block.get("text", ""))}</p></div>', unsafe_allow_html=True)
             elif btype == "problem":
-                st.markdown(f'<div style="background:#FEF2F2; border-left:3px solid #EF4444; padding:15px 17px; color:#991B1B; margin: 10px 0; border-radius:0 8px 8px 0;"><b>Problem:</b> {block["text"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background:#FEF2F2; border-left:3px solid #EF4444; padding:15px 17px; color:#991B1B; margin: 10px 0; border-radius:0 8px 8px 0;"><b>Problem:</b> {block.get("text", "")}</div>', unsafe_allow_html=True)
             elif btype == "concept":
-                st.markdown(f'<div style="background:#EFF6FF; border:1px solid #BFDBFE; padding:15px; border-radius:10px; margin: 15px 0;"><b>{block["title"]}</b><br><span style="color:#1E3A8A; font-size: 0.9rem;">{block["explanation"]}</span></div>', unsafe_allow_html=True)
+                if concept_id: advance_concept(concept_id, "INTRODUCED")
+                st.markdown(f'<div style="background:#EFF6FF; border:1px solid #BFDBFE; padding:15px; border-radius:10px; margin: 15px 0;"><b>{block.get("title", "")}</b><br><span style="color:#1E3A8A; font-size: 0.9rem;">{block.get("summary", block.get("explanation", ""))}</span></div>', unsafe_allow_html=True)
+                if "why_it_matters" in block:
+                    st.markdown(f"**Why it matters:** {block['why_it_matters']}")
+                if "analogy" in block:
+                    st.markdown(f"**Analogy:** {block['analogy']}")
+                if "technical_explanation" in block:
+                    st.markdown(f"**Technical Detail:** {block['technical_explanation']}")
+                if "remember" in block:
+                    st.info(f"**Remember:** {block['remember']}")
+            elif btype == "visual":
+                if concept_id: advance_concept(concept_id, "VISUALIZED")
+                if block.get("visual_type") == "code":
+                    st.code(block.get("data"), language="text")
+                else:
+                    st.markdown(f"```text\n{block.get('data')}\n```")
+            elif btype == "worked_example":
+                if concept_id: advance_concept(concept_id, "PRACTICED")
+                st.markdown(f"### {block.get('title')}")
+                for step in block.get("steps", []):
+                    st.markdown(f"- {step}")
+            elif btype == "reflection":
+                st.info(f"🤔 **Reflection:** {block.get('question')}")
             elif btype == "micro_challenge":
-                st.markdown(f'<h3 style="margin-top: 20px;">Challenge</h3><p style="color:#344054;font-size:.95rem">{block["task"]}</p>', unsafe_allow_html=True)
+                st.markdown(f'<h3 style="margin-top: 20px;">Challenge</h3><p style="color:#344054;font-size:.95rem">{block.get("question", block.get("task", ""))}</p>', unsafe_allow_html=True)
                 if active not in completed_episodes:
                     with st.form(key=f"mcq_form_{story_id}_{active}_{i}"):
                         st.radio("", block["options"], label_visibility="collapsed", key=f"mcq_radio_{story_id}_{active}_{i}")
                         submitted = st.form_submit_button("Submit answer")
                     if submitted:
                         if st.session_state.get(f"mcq_radio_{story_id}_{active}_{i}") == block["answer"]:
+                            if concept_id: advance_concept(concept_id, "APPLIED")
                             complete_current()
                         else:
                             st.error("Not quite. Try again.")
                     break
                 else:
                     st.success(f"✓ You answered: {block['answer']}")
+                    if "explanation" in block:
+                        st.caption(block["explanation"])
             elif btype == "interactive":
-                st.markdown(f'<h3 style="margin-top: 20px;">Challenge</h3><p style="color:#344054;font-size:.95rem">{block["task"]}</p>', unsafe_allow_html=True)
+                st.markdown(f'<h3 style="margin-top: 20px;">Challenge</h3><p style="color:#344054;font-size:.95rem">{block.get("task", "Interactive Lab")}</p>', unsafe_allow_html=True)
                 if active not in completed_episodes:
                     from challenges import render_story_challenge
-                    render_story_challenge(story, lambda sid: complete_current(), show_progress=False)
+                    def _on_complete():
+                        if concept_id: advance_concept(concept_id, "MASTERED")
+                        complete_current()
+                    render_story_challenge(story, lambda sid: _on_complete(), show_progress=False)
                     break
                 else:
                     st.success("✓ Interactive lab complete.")

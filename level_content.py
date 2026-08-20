@@ -15,6 +15,256 @@ Each entry is a dict with:
 """
 
 LEVEL_CONTENT = {
+    0: {
+        "episodes": [
+            # LEVEL 1
+            [
+                {
+                    "type": "story",
+                    "title": "The World Has Too Much Data",
+                    "text": "Nexora has grown from 10,000 citizens to 10 million. Every department keeps its own records. The hospital knows a citizen by one spelling. The university knows them by another. The railway system has another record. The emergency service has incomplete information."
+                },
+                {
+                    "type": "problem",
+                    "text": "Where should all this information live?"
+                },
+                {
+                    "type": "concept",
+                    "concept_id": "what_is_dbms",
+                    "title": "Database Management System (DBMS)",
+                    "summary": "A software system designed to store, retrieve, and manage data safely and efficiently.",
+                    "why_it_matters": "Without it, every application would have to invent its own way to read, write, and secure data.",
+                    "analogy": "A DBMS is like a highly organized central archive where every department requests information through a dedicated, rule-following librarian.",
+                    "remember": "A database is the organized collection of data. A DBMS is the software that manages it."
+                },
+                {
+                    "type": "visual",
+                    "visual_type": "text",
+                    "data": "             NEXORA\n                │\n     ┌──────────┼──────────┐\n     ↓          ↓          ↓\n Hospital    Railway    University\n Excel       CSV        Paper\n files       files      records\n     │          │          │\n     └──────────┼──────────┘\n                ↓\n          DUPLICATED DATA\n          INCONSISTENT DATA\n          HARD TO SEARCH\n          HARD TO PROTECT\n\n          ↓ TRANSFORMS INTO ↓\n\n              DBMS\n                │\n        ┌───────┼────────┐\n        ↓       ↓        ↓\n     Hospital Railway University\n          \\      |      /\n           \\     |     /\n            DATABASE"
+                },
+                {
+                    "type": "micro_challenge",
+                    "task": "Which system would you trust to manage 10 million citizens?",
+                    "options": ["A folder containing CSV files", "Separate Excel files", "A DBMS", "Paper records"],
+                    "answer": "A DBMS",
+                    "explanation": "A DBMS is the only system built to handle concurrent access, massive scale, and strict consistency rules."
+                }
+            ],
+            # LEVEL 2
+            [
+                {
+                    "type": "story",
+                    "title": "Meet the Database",
+                    "text": "You enter the city's central archive. Instead of hundreds of disconnected files, you discover structured collections."
+                },
+                {
+                    "type": "concept",
+                    "concept_id": "tables_rows_cols",
+                    "title": "Tables, Rows, and Columns",
+                    "summary": "Data is organized into tables (entities), where each row is a record (a specific instance), and each column is an attribute (a property).",
+                    "why_it_matters": "Structure makes data predictable and searchable.",
+                    "analogy": "Database = filing room. Table = cabinet. Row = individual file. Column = a specific field on every file."
+                },
+                {
+                    "type": "visual",
+                    "visual_type": "text",
+                    "data": "| id  | name | city   | age |\n| --- | ---- | ------ | --: |\n| 101 | Aria | Nexora |  22 |\n| 102 | Kian | Nexora |  29 |\n| 103 | Mira | Orbis  |  24 |\n\nTable → Row (e.g. 101, Aria) → Column (e.g. city) → Cell (e.g. 'Nexora')"
+                },
+                {
+                    "type": "micro_challenge",
+                    "task": "If you want to add a new citizen, what are you adding?",
+                    "options": ["A new table", "A new row", "A new column", "A new database"],
+                    "answer": "A new row",
+                    "explanation": "Adding an instance of an entity means adding a row. A column would mean adding a new property to everyone."
+                }
+            ],
+            # LEVEL 3
+            [
+                {
+                    "type": "story",
+                    "title": "The Identity Problem",
+                    "text": "Two citizens have the same name. The archive contains three records for 'Alex Morgan'. The system cannot reliably determine which record belongs to which person."
+                },
+                {
+                    "type": "concept",
+                    "concept_id": "primary_key",
+                    "title": "Primary Key",
+                    "summary": "A unique identifier for each row in a table.",
+                    "why_it_matters": "Databases need a reliable, unchanging way to distinguish one record from another, even if their names or other attributes change.",
+                    "remember": "Primary Key = Identity. It must be unique and cannot be NULL."
+                },
+                {
+                    "type": "visual",
+                    "visual_type": "text",
+                    "data": "BAD\n\nname\n────────────\nAlex Morgan\nAlex Morgan\nAlex Morgan\n\nGOOD\n\nperson_id | name\n──────────┼────────────\n1001      | Alex Morgan\n1002      | Alex Morgan\n1003      | Alex Morgan"
+                },
+                {
+                    "type": "micro_challenge",
+                    "task": "Why is 'name' a bad primary key?",
+                    "options": ["It is too long", "Names are not unique (multiple people can have the same name)", "Names change over time", "Both uniqueness and changes"],
+                    "answer": "Both uniqueness and changes",
+                    "explanation": "A primary key must guarantee uniqueness and ideally never change."
+                }
+            ],
+            # LEVEL 4
+            [
+                {
+                    "type": "story",
+                    "title": "The City Becomes Connected",
+                    "text": "The hospital wants to know: 'Which university does this patient attend?' The data is no longer isolated."
+                },
+                {
+                    "type": "concept",
+                    "concept_id": "relationships_fk",
+                    "title": "Relationships & Foreign Keys",
+                    "summary": "A foreign key is a column that creates a link between two tables, pointing to the primary key of another table.",
+                    "why_it_matters": "It prevents data duplication and maintains referential integrity (you can't link to a university that doesn't exist).",
+                    "analogy": "Instead of writing down the whole university address on your hospital form, you just write the university's official ID code."
+                },
+                {
+                    "type": "visual",
+                    "visual_type": "text",
+                    "data": "STUDENTS\n──────────────\nstudent_id PK\nname\nuniversity_id FK\n       │\n       │\n       ↓\nUNIVERSITIES\n──────────────\nuniversity_id PK\nname"
+                },
+                {
+                    "type": "micro_challenge",
+                    "task": "If a student can attend many courses, and a course has many students, how do we link them?",
+                    "options": ["Put all courses in a comma-separated string in the student table", "Put all students in a comma-separated string in the course table", "Create an intermediate 'Enrollment' table with foreign keys to both"],
+                    "answer": "Create an intermediate 'Enrollment' table with foreign keys to both",
+                    "explanation": "Many-to-many relationships are resolved using an intermediate (join) table to preserve the relational structure."
+                }
+            ],
+            # LEVEL 5
+            [
+                {
+                    "type": "story",
+                    "title": "The City Needs Rules",
+                    "text": "A clerk accidentally enters 'age = -17'. Another creates a citizen without an ID. Another assigns a nonexistent university. The archive becomes corrupted."
+                },
+                {
+                    "type": "problem",
+                    "text": "How do we stop bad data from entering the database?"
+                },
+                {
+                    "type": "concept",
+                    "concept_id": "constraints",
+                    "title": "Integrity Constraints",
+                    "summary": "Rules enforced by the DBMS at the schema level to ensure data accuracy and reliability.",
+                    "why_it_matters": "It protects the database from application bugs or human errors. If a rule is violated, the database rejects the insert/update.",
+                    "technical_explanation": "Includes NOT NULL, UNIQUE, PRIMARY KEY, FOREIGN KEY, and CHECK constraints."
+                },
+                {
+                    "type": "visual",
+                    "visual_type": "text",
+                    "data": "             NEW RECORD\n                 │\n                 ↓\n        ┌─────────────────┐\n        │ PRIMARY KEY ?   │\n        └────────┬────────┘\n                 ↓\n        ┌─────────────────┐\n        │ VALID FOREIGN ? │\n        └────────┬────────┘\n                 ↓\n        ┌─────────────────┐\n        │ CHECK RULES ?   │\n        └────────┬────────┘\n                 ↓\n              ACCEPT"
+                },
+                {
+                    "type": "micro_challenge",
+                    "task": "If we set a CHECK constraint `age >= 0`, what happens if a user submits `age = -5`?",
+                    "options": ["The database crashes", "The database silently changes it to 0", "The DBMS rejects the transaction and throws an error"],
+                    "answer": "The DBMS rejects the transaction and throws an error",
+                    "explanation": "Constraints act as gatekeepers; they reject bad data outright."
+                }
+            ],
+            # LEVEL 6
+            [
+                {
+                    "type": "story",
+                    "title": "Speak to the Database",
+                    "text": "The city no longer wants to manually inspect records. You need a way to ask questions and get precise answers."
+                },
+                {
+                    "type": "concept",
+                    "concept_id": "sql_basics",
+                    "title": "Structured Query Language (SQL)",
+                    "summary": "The standard language for communicating with relational databases.",
+                    "why_it_matters": "It allows declarative queries—you describe WHAT you want, and the query planner figures out HOW to get it.",
+                    "remember": "SELECT (what to get) FROM (where to get it) WHERE (conditions)."
+                },
+                {
+                    "type": "worked_example",
+                    "title": "Building a Query",
+                    "steps": [
+                        "Start simple: `SELECT name FROM students;`",
+                        "Filter data: `SELECT name FROM students WHERE age > 20;`",
+                        "Aggregate: `SELECT university_id, COUNT(*) FROM students GROUP BY university_id;`",
+                        "Combine tables: `SELECT s.name, u.name FROM students s JOIN universities u ON s.university_id = u.university_id;`"
+                    ]
+                },
+                {
+                    "type": "micro_challenge",
+                    "task": "Predict what this query does: `SELECT name FROM citizens WHERE city = 'Nexora';`",
+                    "options": ["Returns everything about citizens in Nexora", "Returns only the names of citizens living in Nexora", "Returns a count of citizens in Nexora"],
+                    "answer": "Returns only the names of citizens living in Nexora",
+                    "explanation": "The SELECT clause specifies the exact columns to return."
+                }
+            ],
+            # LEVEL 7
+            [
+                {
+                    "type": "story",
+                    "title": "What Happens When Things Go Wrong?",
+                    "text": "During an emergency, a hospital transfers a patient while simultaneously updating: bed availability, patient status, and billing. Halfway through, the server fails. Some changes happened. Others didn't."
+                },
+                {
+                    "type": "problem",
+                    "text": "How do we prevent partial updates from corrupting the system?"
+                },
+                {
+                    "type": "concept",
+                    "concept_id": "transactions_acid",
+                    "title": "ACID Transactions",
+                    "summary": "A sequence of operations treated as a single, all-or-nothing logical unit of work.",
+                    "why_it_matters": "It guarantees that even in crashes, the database is never left in a half-finished, corrupted state.",
+                    "technical_explanation": "Atomicity (all or nothing), Consistency (obeys constraints), Isolation (concurrent operations don't interfere), Durability (saved permanently)."
+                },
+                {
+                    "type": "visual",
+                    "visual_type": "text",
+                    "data": "BEGIN TRANSACTION\n       │\n       ├── Update patient\n       ├── Update bed\n       ├── Update billing\n       │\n       ↓\n     FAILURE\n       │\n       ↓\n    ROLLBACK\n       │\n       ↓\n  DATABASE RESTORED TO ORIGINAL STATE"
+                },
+                {
+                    "type": "micro_challenge",
+                    "task": "If a transaction is 'Atomic', what does it mean?",
+                    "options": ["It is extremely fast", "It either completely succeeds or completely fails and rolls back", "It operates at a small scale"],
+                    "answer": "It either completely succeeds or completely fails and rolls back",
+                    "explanation": "Atomicity guarantees 'all or nothing'."
+                }
+            ],
+            # LEVEL 8
+            [
+                {
+                    "type": "story",
+                    "title": "The Database Gets Too Big",
+                    "text": "Nexora now has 500 million citizen records. A query that previously took milliseconds now takes seconds. Then minutes."
+                },
+                {
+                    "type": "concept",
+                    "concept_id": "indexing",
+                    "title": "Indexes",
+                    "summary": "An auxiliary data structure (often a B-Tree) that improves data retrieval speed at the cost of slower writes and more storage.",
+                    "why_it_matters": "Searching a huge table without an index requires checking every single row (Sequential Scan), which is catastrophically slow at scale.",
+                    "analogy": "Like an index at the back of a book. Instead of reading every page to find 'Transactions', you jump straight to page 412."
+                },
+                {
+                    "type": "visual",
+                    "visual_type": "text",
+                    "data": "WITHOUT INDEX (Sequential Scan)\nQuery → Scan row 1 → Scan row 2 → ... → Scan row 500,000,000\n\nWITH INDEX (Index Scan)\n             INDEX\n               │\n          ┌────┴────┐\n          ↓         ↓\n        Branch    Branch\n          ↓\n        Leaf\n          ↓\n       Target Row"
+                },
+                {
+                    "type": "reflection",
+                    "question": "The investigations ahead are not separate subjects. They are deeper versions of the problems you just encountered in Nexora. Are you ready?"
+                },
+                {
+                    "type": "micro_challenge",
+                    "task": "How would you make `SELECT * FROM citizens WHERE citizen_id = 4839201;` fast?",
+                    "options": ["Delete old rows", "Add an index on citizen_id", "Run it twice"],
+                    "answer": "Add an index on citizen_id",
+                    "explanation": "An index on citizen_id will allow the query planner to jump directly to the row."
+                }
+            ]
+        ]
+    },
     # ──────────────────────────────────────────────────────────────────────────
     # 1 — The Vanishing Hour   (SQL + Modeling)
     # ──────────────────────────────────────────────────────────────────────────
